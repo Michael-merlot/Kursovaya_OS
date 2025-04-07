@@ -59,12 +59,12 @@ namespace Client
                     return;
                 }
 
-                // Отправляем запрос серверу
+
                 string request = "Запрос на получение системной информации";
                 byte[] data = Encoding.UTF8.GetBytes(request);
                 stream.Write(data, 0, data.Length);
 
-                byte[] buffer = new byte[8192]; 
+                byte[] buffer = new byte[8192];
                 int bytesRead = stream.Read(buffer, 0, buffer.Length);
                 string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 

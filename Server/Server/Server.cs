@@ -12,6 +12,10 @@ namespace Server
 
         public static void StartServer()
         {
+            Task.Run(() => LogServer.StartLogging());
+
+            LogServer.LogEvent("Сервер запущен на порту " + port);
+
             TcpListener listener = new TcpListener(IPAddress.Any, port);
             listener.Start();
             Console.WriteLine($"Сервер запущен на порту {port}");
@@ -21,6 +25,7 @@ namespace Server
                 try
                 {
                     TcpClient client = listener.AcceptTcpClient();
+                    LogServer.LogEvent("Новый клиент подключился");
                     Console.WriteLine("Новый клиент подключился");
 
                     Thread clientThread = new Thread(() => HandleClient(client));
@@ -28,6 +33,7 @@ namespace Server
                 }
                 catch (Exception ex)
                 {
+                    LogServer.LogEvent("Ошибка при принятии клиента: " + ex.Message);
                     Console.WriteLine("Ошибка при принятии клиента: " + ex.Message);
                 }
             }
@@ -36,7 +42,7 @@ namespace Server
         private static void HandleClient(TcpClient client)
         {
             NetworkStream stream = client.GetStream();
-            byte[] buffer = new byte[8192];  
+            byte[] buffer = new byte[8192];
             int bytesRead;
 
             try
@@ -53,19 +59,43 @@ namespace Server
                 stream.Write(data, 0, data.Length);
                 Console.WriteLine("Информация отправлена клиенту.");
 
+                LogToFile($"Информация от сервера: {systemInfo}");
+
                 Console.WriteLine("Ожидаем подтверждения от клиента...");
                 bytesRead = stream.Read(buffer, 0, buffer.Length);
                 string confirmation = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                 Console.WriteLine("Получено подтверждение от клиента: " + confirmation);
+
+                LogToFile($"Получено подтверждение от клиента: {confirmation}");
             }
             catch (IOException ex)
             {
                 Console.WriteLine("Ошибка при обработке клиента: " + ex.Message);
+                LogToFile($"Ошибка при обработке клиента: {ex.Message}");
             }
             finally
             {
                 client.Close();
                 Console.WriteLine("Клиент отключен");
+                LogToFile("Клиент отключен");
+            }
+        }
+
+        private static void LogToFile(string message)
+        {
+            string filePath = "server_log.txt"; 
+            string logMessage = $"{DateTime.Now:dd.MM.yyyy HH:mm:ss}: {message}";
+
+            try
+            {
+                using (StreamWriter sw = new StreamWriter(filePath, true)) 
+                {
+                    sw.WriteLine(logMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Ошибка при записи в лог файл: " + ex.Message);
             }
         }
 
