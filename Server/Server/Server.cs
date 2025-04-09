@@ -1,14 +1,21 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Server
 {
     public class Server
     {
         private static readonly int port = 12345;
+        private static readonly int maxClients = 5;  // максимум 5 клиентов
+        private static int currentClients = 0;  // текущее количество клиентов
+        private static string previousSystemInfo = "";  // хранение предыдущей информации о системе
+        private static string previousLoadInfo = "";  // хранение информации о нагрузке
 
         public static void StartServer()
         {
@@ -24,7 +31,15 @@ namespace Server
             {
                 try
                 {
+                    if (currentClients >= maxClients)
+                    {
+                        Console.WriteLine("Максимальное количество клиентов подключено.");
+                        Thread.Sleep(1000); 
+                        continue;
+                    }
+
                     TcpClient client = listener.AcceptTcpClient();
+                    currentClients++;
                     LogServer.LogEvent("Новый клиент подключился");
                     Console.WriteLine("Новый клиент подключился");
 
@@ -47,55 +62,116 @@ namespace Server
 
             try
             {
-                Console.WriteLine("Ожидаем запрос от клиента...");
-                bytesRead = stream.Read(buffer, 0, buffer.Length);
-                string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                Console.WriteLine("Получен запрос: " + request);
+                while (true)
+                {
+                    Console.WriteLine("Ожидаем команду от клиента...");
+                    bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    if (bytesRead == 0)
+                    {
+                        break; 
+                    }
+                    string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    Console.WriteLine("Получен запрос от клиента: " + request);
 
-                string systemInfo = SystemInfo.GetSystemInfo();
+                    if (request.ToLower() == "update")
+                    {
+                        string systemInfo = SystemInfo.GetSystemInfo();
 
-                Console.WriteLine("Отправляем информацию клиенту...");
-                byte[] data = Encoding.UTF8.GetBytes(systemInfo);
-                stream.Write(data, 0, data.Length);
-                Console.WriteLine("Информация отправлена клиенту.");
+                        if (systemInfo != previousSystemInfo)
+                        {
+                            Console.WriteLine("Отправляем информацию клиенту...");
+                            byte[] data = Encoding.UTF8.GetBytes(systemInfo);
+                            stream.Write(data, 0, data.Length);
+                            Console.WriteLine("Информация отправлена клиенту.");
 
-                LogToFile($"Информация от сервера: {systemInfo}");
+                            LogServer.LogEvent($"Информация от сервера: {systemInfo}");
 
-                Console.WriteLine("Ожидаем подтверждения от клиента...");
-                bytesRead = stream.Read(buffer, 0, buffer.Length);
-                string confirmation = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                Console.WriteLine("Получено подтверждение от клиента: " + confirmation);
+                            previousSystemInfo = systemInfo;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Данные не изменились, ничего не отправляем.");
+                            byte[] noUpdateData = Encoding.UTF8.GetBytes("Данные не изменились.");
+                            stream.Write(noUpdateData, 0, noUpdateData.Length);
+                        }
+                    }
+                    else if (request.ToLower() == "load")
+                    {
+                        string loadInfo = GetGPUInfo();
 
-                LogToFile($"Получено подтверждение от клиента: {confirmation}");
+                        if (loadInfo != previousLoadInfo)
+                        {
+                            byte[] data = Encoding.UTF8.GetBytes(loadInfo);
+                            stream.Write(data, 0, data.Length);
+                            Console.WriteLine("Нагрузка на видеокарту отправлена клиенту.");
+
+                            LogServer.LogEvent($"Информация о нагрузке: {loadInfo}");
+
+                            previousLoadInfo = loadInfo;
+                        }
+                        else
+                        {
+                            byte[] noUpdateData = Encoding.UTF8.GetBytes("Нагрузка не изменилась.");
+                            stream.Write(noUpdateData, 0, noUpdateData.Length);
+                        }
+                    }
+                    else if (request.ToLower() == "exit")
+                    {
+                        break;  
+                    }
+                    else
+                    {
+                        Console.WriteLine("Неизвестная команда от клиента.");
+                    }
+                }
             }
             catch (IOException ex)
             {
                 Console.WriteLine("Ошибка при обработке клиента: " + ex.Message);
-                LogToFile($"Ошибка при обработке клиента: {ex.Message}");
+                LogServer.LogEvent($"Ошибка при обработке клиента: {ex.Message}");
             }
             finally
             {
                 client.Close();
-                Console.WriteLine("Клиент отключен");
-                LogToFile("Клиент отключен");
+                currentClients--;  
+                Console.WriteLine("Клиент отключен. Текущий счетчик клиентов: " + currentClients);
+                LogServer.LogEvent("Клиент отключен");
             }
         }
 
-        private static void LogToFile(string message)
+        private static string GetGPUInfo()
         {
-            string filePath = "server_log.txt"; 
-            string logMessage = $"{DateTime.Now:dd.MM.yyyy HH:mm:ss}: {message}";
-
             try
             {
-                using (StreamWriter sw = new StreamWriter(filePath, true)) 
+                ProcessStartInfo startInfo = new ProcessStartInfo
                 {
-                    sw.WriteLine(logMessage);
-                }
+                    FileName = "nvidia-smi",
+                    Arguments = "--query-gpu=utilization.gpu,memory.used,memory.free --format=csv,noheader,nounits",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                Process process = Process.Start(startInfo);
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit();
+
+                var parts = output.Trim().Split(',');
+
+                string gpuUtilization = parts[0].Trim();  // нагрузка на GPU
+                string memoryUsed = parts[1].Trim();      // используемая память
+                string memoryFree = parts[2].Trim();      // свободная память
+
+                string formattedOutput = $"Нагрузка на GPU: {gpuUtilization}%\n" +
+                                         $"Используемая память: {memoryUsed} MiB\n" +
+                                         $"Свободная память: {memoryFree} MiB";
+
+                return formattedOutput;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Ошибка при записи в лог файл: " + ex.Message);
+                Console.WriteLine("Ошибка при получении информации о видеокарте: " + ex.Message);
+                return "Ошибка при получении данных о видеокарте";
             }
         }
 

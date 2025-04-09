@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 
 namespace Client
 {
@@ -19,19 +18,25 @@ namespace Client
                 client = new TcpClient(serverIP, port);
                 stream = client.GetStream();
 
-                Timer timer = new Timer(UpdateData, null, 0, 5000);
-
-                Console.WriteLine("Для запроса данных вручную введите 'update'. Для выхода - 'exit'.");
+                Console.WriteLine("Для запроса данных вручную введите 'update'. Для получения нагрузки видеокарты введите 'load'. Для выхода - 'exit'.");
                 while (true)
                 {
                     string command = Console.ReadLine();
                     if (command.ToLower() == "update")
                     {
-                        UpdateData(null);
+                        UpdateData();
+                    }
+                    else if (command.ToLower() == "load")
+                    {
+                        GetLoadInfo();
                     }
                     else if (command.ToLower() == "exit")
                     {
                         break;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Неизвестная команда.");
                     }
                 }
 
@@ -47,20 +52,11 @@ namespace Client
             }
         }
 
-        private static bool isClientConnected = true;
-
-        private static void UpdateData(object state)
+        private static void UpdateData()
         {
             try
             {
-                if (!isClientConnected)
-                {
-                    Console.WriteLine("Клиент уже отключен, новые запросы не отправляются.");
-                    return;
-                }
-
-
-                string request = "Запрос на получение системной информации";
+                string request = "update";
                 byte[] data = Encoding.UTF8.GetBytes(request);
                 stream.Write(data, 0, data.Length);
 
@@ -77,15 +73,33 @@ namespace Client
             }
             catch (IOException ex)
             {
-                if (ex.Message.Contains("Unable to write data to the transport connection"))
-                {
-                    isClientConnected = false;
-                    Console.WriteLine("Соединение с сервером потеряно.");
-                    return;
-                }
                 Console.WriteLine("Ошибка при получении данных: " + ex.Message);
             }
         }
 
+        private static void GetLoadInfo()
+        {
+            try
+            {
+                string request = "load"; 
+                byte[] data = Encoding.UTF8.GetBytes(request);
+                stream.Write(data, 0, data.Length);
+
+                byte[] buffer = new byte[8192];
+                int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+                Console.WriteLine("Изменения от сервера: " + response);
+
+                string confirmation = "Подтверждение нагрузки получено";
+                byte[] confirmationData = Encoding.UTF8.GetBytes(confirmation);
+                stream.Write(confirmationData, 0, confirmationData.Length);
+                Console.WriteLine("Подтверждение отправлено серверу.");
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine("Ошибка при получении данных: " + ex.Message);
+            }
+        }
     }
 }
