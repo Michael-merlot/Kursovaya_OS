@@ -6,33 +6,26 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 
 namespace Server
 {
     public class Server
     {
-        [DllImport("user32.dll")]
-        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-        private const int SW_HIDE = 0;
-        private const int SW_SHOW = 5;
-
         private static readonly int port = 12345;
-        private static readonly int maxClients = 5;
-        private static int currentClients = 0;
-        private static string previousSystemInfo = "";
-        private static string previousLoadInfo = "";
+        private static readonly int maxClients = 5;  // максимум 5 клиентов
+        private static int currentClients = 0;  // текущее количество клиентов
+        private static string previousSystemInfo = "";  // хранение предыдущей информации о системе
+        private static string previousLoadInfo = "";  // хранение информации о нагрузке
 
         public static void StartServer()
         {
             Task.Run(() => LogServer.StartLogging());
 
-            LogServer.LogEvent("Сервер 1 запущен на порту " + port);
+            LogServer.LogEvent("Сервер запущен на порту " + port);
 
             TcpListener listener = new TcpListener(IPAddress.Any, port);
             listener.Start();
-            Console.WriteLine($"Сервер 1 запущен на порту {port}");
+            Console.WriteLine($"Сервер запущен на порту {port}");
 
             while (true)
             {
@@ -41,7 +34,7 @@ namespace Server
                     if (currentClients >= maxClients)
                     {
                         Console.WriteLine("Максимальное количество клиентов подключено.");
-                        Thread.Sleep(1000);
+                        Thread.Sleep(1000); 
                         continue;
                     }
 
@@ -75,7 +68,7 @@ namespace Server
                     bytesRead = stream.Read(buffer, 0, buffer.Length);
                     if (bytesRead == 0)
                     {
-                        break;
+                        break; 
                     }
                     string request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                     Console.WriteLine("Получен запрос от клиента: " + request);
@@ -122,26 +115,9 @@ namespace Server
                             stream.Write(noUpdateData, 0, noUpdateData.Length);
                         }
                     }
-                    else if (request.ToLower().StartsWith("hide"))
-                    {
-                        if (request.Length <= 5)
-                        {
-                            string error = "Ошибка: укажите время (например: hide 5000)";
-                            byte[] date = Encoding.UTF8.GetBytes(error);
-                            stream.Write(date, 0, date.Length);
-                            Console.WriteLine(error);
-                            continue;
-                        }
-
-                        string result = HandleHideCommand(request.Substring(5).Trim());
-                        byte[] data = Encoding.UTF8.GetBytes(result);
-                        stream.Write(data, 0, data.Length);
-                        Console.WriteLine(result);
-                        LogServer.LogEvent(result);
-                    }
                     else if (request.ToLower() == "exit")
                     {
-                        break;
+                        break;  
                     }
                     else
                     {
@@ -157,39 +133,11 @@ namespace Server
             finally
             {
                 client.Close();
-                currentClients--;
+                currentClients--;  
                 Console.WriteLine("Клиент отключен. Текущий счетчик клиентов: " + currentClients);
                 LogServer.LogEvent("Клиент отключен");
             }
         }
-
-        private static string HandleHideCommand(string millisecondsText)
-        {
-            if (!int.TryParse(millisecondsText, out int milliseconds) || milliseconds < 1000 || milliseconds > 10000)
-            {
-                return "Ошибка: параметр должен быть числом от 1000 до 10000";
-            }
-
-            try
-            {
-                IntPtr window = GetConsoleWindow();
-                if (window == IntPtr.Zero)
-                    return "Ошибка: не удалось получить handle консольного окна";
-
-                ShowWindow(window, SW_HIDE);
-                Thread.Sleep(milliseconds);
-                ShowWindow(window, SW_SHOW);
-
-                return $"Успех: консоль скрыта на {milliseconds} мс";
-            }
-            catch (Exception ex)
-            {
-                return "Ошибка: " + ex.Message;
-            }
-        }
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr GetConsoleWindow();
 
         private static string GetGPUInfo()
         {
@@ -210,9 +158,9 @@ namespace Server
 
                 var parts = output.Trim().Split(',');
 
-                string gpuUtilization = parts[0].Trim();
-                string memoryUsed = parts[1].Trim();
-                string memoryFree = parts[2].Trim();
+                string gpuUtilization = parts[0].Trim();  // нагрузка на GPU
+                string memoryUsed = parts[1].Trim();      // используемая память
+                string memoryFree = parts[2].Trim();      // свободная память
 
                 string formattedOutput = $"Нагрузка на GPU: {gpuUtilization}%\n" +
                                          $"Используемая память: {memoryUsed} MiB\n" +
@@ -226,5 +174,6 @@ namespace Server
                 return "Ошибка при получении данных о видеокарте";
             }
         }
+
     }
 }
