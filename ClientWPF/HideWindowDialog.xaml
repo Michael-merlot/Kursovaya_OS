@@ -1,0 +1,17 @@
+﻿<Window x:Class="ClientWPF.HideWindowDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Скрыть сервер" Height="200" Width="300"
+        WindowStartupLocation="CenterOwner">
+    <Grid Margin="10">
+        <StackPanel>
+            <TextBlock Text="Введите время скрытия (мс):" Margin="0,0,0,10"/>
+            <Slider x:Name="timeSlider" Minimum="1000" Maximum="10000" 
+                    TickFrequency="1000" IsSnapToTickEnabled="True"/>
+            <TextBlock Text="{Binding ElementName=timeSlider, Path=Value, StringFormat={}{0} мс}"
+                      HorizontalAlignment="Center" Margin="0,10,0,20"/>
+            <Button Content="OK" Width="80" HorizontalAlignment="Center"
+                    Click="OK_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
