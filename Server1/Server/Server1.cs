@@ -10,13 +10,13 @@ namespace Server1
 {
     public class Server1
     {
-        private static readonly int port = 12346;  // порт для сервера 2
-        private static readonly int maxClients = 5;  // максимум 5 клиентов
-        private static int currentClients = 0;  // текущее количество клиентов
+        private static readonly int port = 12346;
+        private static readonly int maxClients = 6;
+        private static int currentClients = 0;
 
         public static void StartServer()
         {
-            Task.Run(() => LogServer.StartLogging());
+            Task.Run(() => LogServer.StartLogging("Server2"));
 
             LogServer.LogEvent("Сервер 2 запущен на порту " + port);
 
@@ -126,6 +126,7 @@ namespace Server1
                 string output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
 
+                LogServer.LogEvent($"WMIC Физическая память (raw):\n{output}");
                 Console.WriteLine($"Вывод команды WMIC:\n{output}");
 
                 string freeMemoryLine = output.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
@@ -135,7 +136,9 @@ namespace Server1
 
                 if (freeMemoryLine == null || totalMemoryLine == null)
                 {
-                    return "Ошибка: не удалось получить данные о физической памяти";
+                    string error = "Ошибка: не удалось получить данные о физической памяти";
+                    LogServer.LogEvent(error);
+                    return error;
                 }
 
                 string freeMemory = freeMemoryLine.Split('=')[1].Trim();
@@ -147,12 +150,17 @@ namespace Server1
                 double usedMem = totalMemInMB - freeMemInMB;
                 double usagePercentage = (usedMem / totalMemInMB) * 100;
 
-                return $"Процент использования физической памяти: {usagePercentage:0.00}%";
+                string result = $"Процент использования физической памяти: {usagePercentage:0.00}%";
+                LogServer.LogEvent($"Рассчитанные данные: {result}");
+
+                return result;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Ошибка при получении данных о физической памяти: " + ex.Message);
-                return "Ошибка при получении данных о физической памяти: " + ex.Message;
+                string error = $"Ошибка при получении данных о физической памяти: {ex.Message}";
+                LogServer.LogEvent(error);
+                Console.WriteLine(error);
+                return error;
             }
         }
 
@@ -174,6 +182,7 @@ namespace Server1
                 string output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
 
+                LogServer.LogEvent($"WMIC Виртуальная память (raw):\n{output}");
                 Console.WriteLine($"Вывод команды WMIC:\n{output}");
 
                 string freeMemoryLine = output.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries)
@@ -183,7 +192,9 @@ namespace Server1
 
                 if (freeMemoryLine == null || totalMemoryLine == null)
                 {
-                    return "Ошибка: не удалось получить данные о виртуальной памяти";
+                    string error = "Ошибка: не удалось получить данные о виртуальной памяти";
+                    LogServer.LogEvent(error);
+                    return error;
                 }
 
                 string freeMemory = freeMemoryLine.Split('=')[1].Trim();
@@ -195,14 +206,18 @@ namespace Server1
                 double usedMem = totalMemInMB - freeMemInMB;
                 double usagePercentage = (usedMem / totalMemInMB) * 100;
 
-                return $"Процент использования виртуальной памяти: {usagePercentage:0.00}%";
+                string result = $"Процент использования виртуальной памяти: {usagePercentage:0.00}%";
+                LogServer.LogEvent($"Рассчитанные данные: {result}");
+
+                return result;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Ошибка при получении данных о виртуальной памяти: " + ex.Message);
-                return "Ошибка при получении данных о виртуальной памяти: " + ex.Message;
+                string error = $"Ошибка при получении данных о виртуальной памяти: {ex.Message}";
+                LogServer.LogEvent(error);
+                Console.WriteLine(error);
+                return error;
             }
         }
-
     }
 }

@@ -6,9 +6,9 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace Server1 // (или Server1 для другого проекта)
+namespace ClientWPF
 {
-    public class LogServer
+    public class LogServerClient
     {
         private static readonly string logServerIp = "127.0.0.1";
         private static readonly int logServerPort = 12347;
@@ -16,19 +16,16 @@ namespace Server1 // (или Server1 для другого проекта)
         private static TcpClient client;
         private static NetworkStream stream;
         private static bool isConnected = false;
-        private static string serverId;
+        private static readonly string clientId = "ClientWPF";
         private static readonly string localLogFilePath;
 
-        static LogServer()
+        static LogServerClient()
         {
-            localLogFilePath = Path.Combine(Directory.GetCurrentDirectory(), "local_log.txt");
+            localLogFilePath = Path.Combine(Directory.GetCurrentDirectory(), "client_wpf_log.txt");
         }
 
-        public static void StartLogging(string serverIdentifier = null)
+        public static void StartLogging()
         {
-            // Если идентификатор сервера не указан, используем имя пространства имен
-            serverId = serverIdentifier ?? typeof(LogServer).Namespace;
-
             // Запускаем обработку канала
             Task.Run(async () => await ProcessLogChannel());
 
@@ -36,7 +33,7 @@ namespace Server1 // (или Server1 для другого проекта)
             Task.Run(() => ConnectToLogServer());
 
             // Логируем запуск
-            LogEvent($"{serverId} логирование инициализировано");
+            LogEvent($"{clientId} логирование инициализировано");
         }
 
         private static void ConnectToLogServer()
@@ -47,8 +44,8 @@ namespace Server1 // (или Server1 для другого проекта)
                 client.Connect(logServerIp, logServerPort);
                 stream = client.GetStream();
 
-                // Отправляем идентификатор сервера
-                byte[] idData = Encoding.UTF8.GetBytes(serverId);
+                // Отправляем идентификатор клиента
+                byte[] idData = Encoding.UTF8.GetBytes(clientId);
                 stream.Write(idData, 0, idData.Length);
 
                 // Ждем подтверждения
@@ -60,7 +57,7 @@ namespace Server1 // (или Server1 для другого проекта)
                 isConnected = true;
 
                 // Отправляем накопленные сообщения
-                logChannel.Writer.TryWrite($"Подключено к серверу логирования как {serverId}");
+                logChannel.Writer.TryWrite($"Подключено к серверу логирования как {clientId}");
             }
             catch (Exception ex)
             {
@@ -124,16 +121,13 @@ namespace Server1 // (или Server1 для другого проекта)
         {
             // Отправляем сообщение в канал
             logChannel.Writer.TryWrite(message);
-
-            // Также выводим в консоль для наглядности
-            Console.WriteLine($"[ЛОГ] {message}");
         }
 
         private static void LogLocally(string message)
         {
             try
             {
-                File.AppendAllText(localLogFilePath, $"{DateTime.Now}: [{serverId}] {message}\n");
+                File.AppendAllText(localLogFilePath, $"{DateTime.Now}: [{clientId}] {message}\n");
             }
             catch (Exception ex)
             {

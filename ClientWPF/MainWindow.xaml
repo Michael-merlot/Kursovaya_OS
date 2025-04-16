@@ -7,26 +7,52 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Панель подключения -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10">
-            <ComboBox x:Name="serverComboBox" Width="100" Margin="0,0,10,0">
-                <ComboBoxItem Content="Сервер 1 (12345)"/>
-                <ComboBoxItem Content="Сервер 2 (12346)"/>
+        <Grid Grid.Row="0" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ComboBox x:Name="serverComboBox" Grid.Column="0" Margin="0,0,10,0" SelectedIndex="0">
+                <ComboBoxItem Content="Сервер 1 (Системная информация, 12345)"/>
+                <ComboBoxItem Content="Сервер 2 (Информация о памяти, 12346)"/>
             </ComboBox>
-            <Button x:Name="connectBtn" Content="Подключиться" Width="100" Click="ConnectBtn_Click"/>
-        </StackPanel>
+            <Button x:Name="connectBtn" Grid.Column="1" Content="Подключиться" Width="120" Click="ConnectBtn_Click"/>
+        </Grid>
 
         <!-- Область вывода информации -->
-        <TextBox x:Name="outputTextBox" Grid.Row="1" Margin="10" 
-                 IsReadOnly="True" VerticalScrollBarVisibility="Auto"/>
+        <Border Grid.Row="1" Margin="10" BorderThickness="1" BorderBrush="#AAAAAA">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBox x:Name="outputTextBox" TextWrapping="Wrap" IsReadOnly="True" 
+                         BorderThickness="0" Background="#FAFAFA" FontFamily="Consolas"/>
+            </ScrollViewer>
+        </Border>
 
-        <!-- Панель управления -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-            <Button x:Name="updateBtn" Content="Обновить данные" Width="120" Margin="0,0,10,0" Click="UpdateBtn_Click"/>
-            <Button x:Name="loadBtn" Content="Нагрузка GPU" Width="120" Margin="0,0,10,0" Click="LoadBtn_Click"/>
-            <Button x:Name="hideBtn" Content="Скрыть сервер" Width="120" Click="HideBtn_Click"/>
+            <Button x:Name="updateBtn" Content="Обновить данные" Width="120" Margin="0,0,10,0" Click="UpdateBtn_Click">
+                <Button.ToolTip>
+                    <ToolTip Content="Запросить актуальные данные с сервера"/>
+                </Button.ToolTip>
+            </Button>
+            <Button x:Name="loadBtn" Content="Нагрузка GPU" Width="120" Margin="0,0,10,0" Click="LoadBtn_Click">
+                <Button.ToolTip>
+                    <ToolTip Content="Получить информацию о нагрузке на видеокарту"/>
+                </Button.ToolTip>
+            </Button>
+            <Button x:Name="hideBtn" Content="Скрыть сервер" Width="120" Click="HideBtn_Click">
+                <Button.ToolTip>
+                    <ToolTip Content="Временно скрыть окно сервера на указанное время"/>
+                </Button.ToolTip>
+            </Button>
         </StackPanel>
+
+        <StatusBar Grid.Row="3">
+            <StatusBarItem>
+                <TextBlock x:Name="statusText" Text="Готов к работе. Для начала работы подключитесь к серверу."/>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

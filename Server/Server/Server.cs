@@ -19,14 +19,14 @@ namespace Server
         private const int SW_SHOW = 5;
 
         private static readonly int port = 12345;
-        private static readonly int maxClients = 5;
+        private static readonly int maxClients = 6;
         private static int currentClients = 0;
         private static string previousSystemInfo = "";
         private static string previousLoadInfo = "";
 
         public static void StartServer()
         {
-            Task.Run(() => LogServer.StartLogging());
+            Task.Run(() => LogServer.StartLogging("Server1"));
 
             LogServer.LogEvent("Сервер 1 запущен на порту " + port);
 

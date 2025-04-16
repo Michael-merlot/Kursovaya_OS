@@ -14,23 +14,18 @@ namespace Server
             sb.AppendLine("=== Системная информация ===");
             sb.AppendLine($"Время: {DateTime.Now}\n");
 
-            // Информация о процессоре
             sb.AppendLine("[Процессор]");
             sb.AppendLine(GetCpuInfo().Trim());
 
-            // Информация о памяти
             sb.AppendLine("\n[Память]");
             sb.AppendLine(GetMemoryInfo().Trim());
 
-            // Информация о видеокарте
             sb.AppendLine("\n[Видеокарта]");
             sb.AppendLine(GetGpuInfo().Trim());
 
-            // Информация о системе
             sb.AppendLine("\n[Система]");
             sb.AppendLine(GetSystemDetails().Trim());
 
-            // Информация о дисках
             sb.AppendLine("\n[Диски]");
             sb.AppendLine(GetDiskInfo().Trim());
 
@@ -167,10 +162,9 @@ namespace Server
                 string output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
 
-                // Убираем лишние пустые строки для Windows
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    output = output.Replace("\r\r", "\r"); // Убираем дублированные \r
+                    output = output.Replace("\r\r", "\r");
                     string[] lines = output.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
                     var cleanedLines = new List<string>();
 

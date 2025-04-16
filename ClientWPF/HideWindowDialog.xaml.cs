@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 
 namespace ClientWPF
 {
@@ -15,6 +16,7 @@ namespace ClientWPF
         private void OK_Click(object sender, RoutedEventArgs e)
         {
             SelectedTime = (int)timeSlider.Value;
+            LogServerClient.LogEvent($"Выбрано время скрытия: {SelectedTime} мс");
             DialogResult = true;
         }
     }

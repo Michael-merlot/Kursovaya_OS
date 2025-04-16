@@ -8,7 +8,7 @@ namespace Client
     public class Client
     {
         private static string serverIP = "127.0.0.1";
-        private static int port = 12345;  // порт по умолчанию (сервер 1)
+        private static int port = 12345; 
         private static TcpClient client;
         private static NetworkStream stream;
 
@@ -26,11 +26,11 @@ namespace Client
                     }
                     else if (serverChoice == "1")
                     {
-                        port = 12345;  // порт сервера 1
+                        port = 12345; 
                     }
                     else if (serverChoice == "2")
                     {
-                        port = 12346;  // порт сервера 2
+                        port = 12346;
                     }
                     else
                     {

@@ -15,6 +15,8 @@ namespace ClientWPF
         public MainWindow()
         {
             InitializeComponent();
+            Task.Run(() => LogServerClient.StartLogging());
+            LogServerClient.LogEvent("Приложение ClientWPF запущено");
             UpdateUI();
         }
 
@@ -24,6 +26,12 @@ namespace ClientWPF
             updateBtn.IsEnabled = isConnected;
             loadBtn.IsEnabled = isConnected;
             hideBtn.IsEnabled = isConnected;
+        }
+
+        private void UpdateStatus(string message)
+        {
+            statusText.Text = message;
+            LogServerClient.LogEvent(message);
         }
 
         private async void ConnectBtn_Click(object sender, RoutedEventArgs e)
@@ -37,6 +45,8 @@ namespace ClientWPF
             string serverIP = "127.0.0.1";
             int port = serverComboBox.SelectedIndex == 0 ? 12345 : 12346;
 
+            UpdateStatus($"Подключение к серверу на порту {port}...");
+
             try
             {
                 client = new TcpClient();
@@ -44,10 +54,13 @@ namespace ClientWPF
                 stream = client.GetStream();
                 isConnected = true;
                 outputTextBox.AppendText($"Подключено к серверу {port}\n");
+                UpdateStatus($"Подключено к серверу на порту {port}. Готов к работе.");
             }
             catch (Exception ex)
             {
                 outputTextBox.AppendText($"Ошибка подключения: {ex.Message}\n");
+                LogServerClient.LogEvent($"Ошибка подключения: {ex.Message}");
+                UpdateStatus("Ошибка подключения к серверу");
             }
             finally
             {
@@ -62,10 +75,12 @@ namespace ClientWPF
                 stream?.Close();
                 client?.Close();
                 outputTextBox.AppendText("Отключено от сервера\n");
+                UpdateStatus("Отключено от сервера. Для начала работы подключитесь к серверу.");
             }
             catch (Exception ex)
             {
                 outputTextBox.AppendText($"Ошибка отключения: {ex.Message}\n");
+                LogServerClient.LogEvent($"Ошибка отключения: {ex.Message}");
             }
             finally
             {
@@ -87,17 +102,19 @@ namespace ClientWPF
                 string fullCommand = string.IsNullOrEmpty(parameters) ? command : $"{command} {parameters}";
                 byte[] data = Encoding.UTF8.GetBytes(fullCommand);
                 await stream.WriteAsync(data, 0, data.Length);
+                LogServerClient.LogEvent($"Отправлена команда: {fullCommand}");
 
-                // В методе SendCommand:
                 byte[] buffer = new byte[8192];
                 int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);  // ← UTF-8
+                string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
                 outputTextBox.AppendText($"{DateTime.Now}: {response}\n");
+                LogServerClient.LogEvent($"Получен ответ: {response}");
             }
             catch (Exception ex)
             {
                 outputTextBox.AppendText($"Ошибка: {ex.Message}\n");
+                LogServerClient.LogEvent($"Ошибка при отправке команды: {ex.Message}");
                 Disconnect();
             }
         }
@@ -123,6 +140,7 @@ namespace ClientWPF
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
+            LogServerClient.LogEvent("Приложение ClientWPF завершает работу");
             Disconnect();
             base.OnClosing(e);
         }
